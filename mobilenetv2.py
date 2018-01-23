@@ -4,7 +4,8 @@ import tensorflow as tf
 import tensorflow.contrib.slim as slim
 
 
-def mobilenet_args_scope(weight_decay, is_training=True, stddev=0.09, regularize_depthwise=False, dropout_keep_prob=1.0):
+def mobilenet_v2_arg_scope(weight_decay, is_training=True, depth_multiplier=1.0, regularize_depthwise=False,
+                           dropout_keep_prob=1.0):
 
     regularizer = tf.contrib.layers.l2_regularizer(weight_decay)
     if regularize_depthwise:
@@ -19,7 +20,7 @@ def mobilenet_args_scope(weight_decay, is_training=True, stddev=0.09, regularize
         with slim.arg_scope([slim.conv2d], weights_regularizer=regularizer):
 
             with slim.arg_scope([slim.separable_conv2d],
-                                weights_regularizer=depthwise_regularizer, depth_multiplier=1.0):
+                                weights_regularizer=depthwise_regularizer, depth_multiplier=depth_multiplier):
 
                 with slim.arg_scope([slim.dropout], is_training=is_training, keep_prob=dropout_keep_prob) as sc:
 
@@ -51,15 +52,23 @@ def blocks(net, expansion, output_filters, repeat, stride):
     return net
 
 
-def build_net(inputs, num_classes, regularizer_scale, is_training=True, dropout_keep_prob=1.0):
+def mobilenet_v2(inputs,
+                 num_classes=1000,
+                 dropout_keep_prob=0.999,
+                 is_training=True,
+                 depth_multiplier=1.0,
+                 prediction_fn=tf.contrib.layers.softmax,
+                 spatial_squeeze=True,
+                 scope='MobilenetV2'):
+
     endpoints = dict()
 
     expansion = 6
 
-    with tf.variable_scope('mobilenetv2'):
+    with tf.variable_scope(scope):
 
-        with slim.arg_scope(mobilenet_args_scope(regularizer_scale, is_training=is_training,
-                                                 dropout_keep_prob=dropout_keep_prob)):
+        with slim.arg_scope(mobilenet_v2_arg_scope(0.0004, is_training=is_training, depth_multiplier=depth_multiplier,
+                                                   dropout_keep_prob=dropout_keep_prob)):
             net = tf.identity(inputs)
 
             net = slim.conv2d(net, 32, [3, 3], scope='conv11', stride=2)
@@ -82,12 +91,16 @@ def build_net(inputs, num_classes, regularizer_scale, is_training=True, dropout_
 
             net = slim.avg_pool2d(net, [7, 7])
 
-            net = slim.conv2d(net, num_classes, [1, 1], activation_fn=None, normalizer_fn=None, scope='features')
+            logits = slim.conv2d(net, num_classes, [1, 1], activation_fn=None, normalizer_fn=None, scope='features')
 
-            net = slim.flatten(net)
+            if spatial_squeeze:
+                logits = tf.squeeze(logits, [1, 2], name='SpatialSqueeze')
 
-    features = tf.identity(net, name='features')
-    endpoints['features'] = features
+            endpoints['Logits'] = logits
 
-    return net, endpoints
+            if prediction_fn:
+                endpoints['Predictions'] = prediction_fn(logits, scope='Predictions')
 
+    return logits, endpoints
+
+mobilenet_v2.default_image_size = 224
