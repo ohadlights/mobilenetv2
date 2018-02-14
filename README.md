@@ -13,4 +13,4 @@ Trained with [TensorFlow-Slim image classification model library](https://github
 | Cifar10 | MobileNet V2 | 2    | False          | 3:50 hours    | 0.9967   | 0.9071   |
 | Cifar10 | MobileNet V2 | 2    | False          | 15 hours      | 0.9976   | 0.9315   |
 
-Added the trained checkpoint under 'pretrained' folder.
+Added the trained checkpoint under 'checkpoints' folder.
