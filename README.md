@@ -1,6 +1,8 @@
 # MobileNetV2
 TensorFlow implementation for MobileNetV2
 
+There is now an implementation in TensorFlow models repository: https://github.com/tensorflow/models/tree/master/research/slim/nets/mobilenet
+
 According to the paper: [Inverted Residuals and Linear Bottlenecks: Mobile Networks for
 Classification, Detection and Segmentation](https://arxiv.org/pdf/1801.04381.pdf)
 
